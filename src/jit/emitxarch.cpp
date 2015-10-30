@@ -9514,7 +9514,7 @@ BYTE*               emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 #ifdef RELOC_SUPPORT
         if (id->idIsCnsReloc())
         {
-            emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_BASED_MOFFSET);
         }
 #endif
 
