@@ -62,6 +62,32 @@ if not exist "$(OutputPath)\$(MSBuildProjectName).ni.$(OutputType)" "%CORE_ROOT%
     </PropertyGroup>
   </Target>
 
+  <Target Name="GenerateExecutionInfo"
+    Inputs="$(MSBuildProjectFullPath)"
+    Outputs="$(OutputPath)\run.xml">
+    <PropertyGroup>
+        <RunInfoText><![CDATA[
+<test>
+    <precmds>$(CLRTestBatchPreCommands)</precmds>
+    <executable>$(MSBuildProjectName).exe</executable>
+    <arguments>$(CLRTestExecutionArguments)</arguments>
+    <exitcode>$(CLRTestExitCode)</exitcode>
+    <postcmds>$(CLRTestBatchPostCommands)</postcmds>
+</test>
+        ]]>
+        </RunInfoText>
+    </PropertyGroup>
+    <Copy
+      Condition="Exists('$(MSBuildProjectDirectory)\project.lock.json')"
+      SourceFiles="$(MSBuildProjectDirectory)\project.lock.json"
+      DestinationFiles="$(OutputPath)\$(MSBuildProjectName).project.lock.json">
+    </Copy>
+    <WriteLinesToFile
+      File="$(OutputPath)\$(MSBuildProjectName).run.xml"
+      Lines="$(RunInfoText)"
+      Overwrite="true" />
+  </Target>
+
   <!--
   *******************************************************************************************
   TARGET: GenerateExecutionScriptInternal

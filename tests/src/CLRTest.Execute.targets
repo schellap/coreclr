@@ -104,6 +104,6 @@ This file contains the logic for providing Execution Script generation.
   
   <Target Name="GenerateExecutionScriptsInternal"
     Condition="$(_CLRTestNeedsToRun) or $(_CLRTestBuildsExecutable)"
-    DependsOnTargets="Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript;" />
+    DependsOnTargets="Generate@(ExecutionScriptKind, 'ExecutionScript;Generate')ExecutionScript;GenerateExecutionInfo" />
   
 </Project>
