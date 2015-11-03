@@ -210,14 +210,22 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
 
       <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
 IF NOT "%CLRCustomTestLauncher%"=="" (
-  setlocal enabledelayedexpansion
-  %CLRCustomTestLauncher% ~dp0 $(_CLRTestExeFile) %CLRTestExecutionArguments% %Host_Args%
-  set CLRTestExitCode=!ERRORLEVEL!
+  goto :CustomLauncher
 ) ELSE (
+  goto :DefaultLauncher
+)
+:CustomLauncher
+  call %CLRCustomTestLauncher% %~dp0 $(_CLRTestExeFile) %CLRTestExecutionArguments% %Host_Args%
+  set CLRTestExitCode=%ERRORLEVEL%
+  goto EndLauncher
+
+:DefaultLauncher
   ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
   %_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
   set CLRTestExitCode=%ERRORLEVEL%
-)
+
+:EndLauncher
+
       ]]></BatchCLRTestLaunchCmds>
     </PropertyGroup>   
     <PropertyGroup>
