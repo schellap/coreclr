@@ -204,16 +204,20 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
     
 
     <PropertyGroup> 
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">"$(_CLRTestToRunFileFullPath)"</_CLRTestRunFile>
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And $(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestToRunFileFullPath)</_CLRTestRunFile>
-   
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">"$(MSBuildProjectName).exe"</_CLRTestRunFile>
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestRunFile)</_CLRTestRunFile>
+      <_CLRTestExeFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">$(_CLRTestToRunFileFullPath)</_CLRTestExeFile>
+      <_CLRTestExeFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">$(MSBuildProjectName).exe</_CLRTestExeFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" "$(_CLRTestExeFile)"</_CLRTestRunFile>
 
       <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
-ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
-%_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
-set CLRTestExitCode=%ERRORLEVEL%
+IF NOT "%CLRCustomTestLauncher%"=="" (
+  setlocal enabledelayedexpansion
+  %CLRCustomTestLauncher% ~dp0 $(_CLRTestExeFile) %CLRTestExecutionArguments% %Host_Args%
+  set CLRTestExitCode=!ERRORLEVEL!
+) ELSE (
+  ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
+  %_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
+  set CLRTestExitCode=%ERRORLEVEL%
+)
       ]]></BatchCLRTestLaunchCmds>
     </PropertyGroup>   
     <PropertyGroup>
