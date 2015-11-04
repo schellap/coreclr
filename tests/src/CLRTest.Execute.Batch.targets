@@ -62,69 +62,6 @@ if not exist "$(OutputPath)\$(MSBuildProjectName).ni.$(OutputType)" "%CORE_ROOT%
     </PropertyGroup>
   </Target>
 
-  <UsingTask
-    TaskName="GenerateRunJsonTask"
-    TaskFactory="CodeTaskFactory"
-    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-    <ParameterGroup>
-      <RunInfo ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
-      <RunInfoJson ParameterType="System.String" Output="true"/>
-    </ParameterGroup>
-    <Task>
-      <Reference Include="System.Core"/>
-      <Reference Include="System.Web.Extensions"/>
-      <Using Namespace="System"/>
-      <Using Namespace="System.Linq"/>
-      <Using Namespace="System.Web.Script.Serialization"/>
-      <Code Type="Fragment" Language="cs"><![CDATA[
-        var item = RunInfo[0];
-        var jsonObject = new {
-            Path = item.GetMetadata("Path"),
-            RelativePath = item.GetMetadata("RelativePath"),
-            Name = item.GetMetadata("Name"),
-            Executable = item.GetMetadata("Executable"),
-            Arguments = item.GetMetadata("Arguments"),
-            PreCmd = item.GetMetadata("PreCmd"),
-            PostCmd = item.GetMetadata("PostCmd"),
-            ExitCode = Int32.Parse(item.GetMetadata("ExitCode")),
-        };
-        RunInfoJson = new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(jsonObject);
-        ]]>
-      </Code>
-    </Task>
-  </UsingTask>
-
-  <Target Name="GenerateExecutionInfo"
-    Inputs="$(MSBuildProjectFullPath)"
-    Outputs="$(OutputPath)\run.json">
-    <ItemGroup>
-      <TestRunInfo Include="$(MSBuildProjectName).exe">
-        <Name>$(MSBuildProjectName)</Name>
-        <RelativePath>$(BuildProjectRelativeDir)</RelativePath>
-        <Path>$(MSBuildProjectDirectory)</Path>
-        <Executable>$(MSBuildProjectName).exe</Executable>
-        <Arguments>$(CLRTestExecutionArguments)</Arguments>
-        <PreCmd>$(CLRTestBatchPreCommands)</PreCmd>
-        <PostCmd>$(CLRTestBatchPostCommands)</PostCmd>
-        <ExitCode>$(CLRTestExitCode)</ExitCode>
-      </TestRunInfo>
-    </ItemGroup>
-    <Message Text="It is: @(TestRunInfo)" />
-    <GenerateRunJsonTask RunInfo="@(TestRunInfo)">
-      <Output TaskParameter="RunInfoJson" PropertyName="RunInfoJson"/>
-    </GenerateRunJsonTask>
-    <Copy
-      Condition="Exists('$(MSBuildProjectDirectory)\project.lock.json')"
-      SourceFiles="$(MSBuildProjectDirectory)\project.lock.json"
-      DestinationFiles="$(OutputPath)\$(MSBuildProjectName).project.lock.json">
-    </Copy>
-    <Message Text="Wrote $(RunInfoJson) to $(OutputPath)\$(MSBuildProjectName).run.json" />
-    <WriteLinesToFile
-      File="$(OutputPath)\$(MSBuildProjectName).run.json"
-      Lines="$(RunInfoJson)"
-      Overwrite="true" />
-  </Target>
-
   <!--
   *******************************************************************************************
   TARGET: GenerateExecutionScriptInternal
@@ -207,6 +144,7 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
       <_CLRTestExeFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">$(_CLRTestToRunFileFullPath)</_CLRTestExeFile>
       <_CLRTestExeFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">$(MSBuildProjectName).exe</_CLRTestExeFile>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" "$(_CLRTestExeFile)"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='false'">"$(_CLRTestExeFile)"</_CLRTestRunFile>
 
       <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
 IF NOT "%CLRCustomTestLauncher%"=="" (
@@ -214,10 +152,11 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
 ) ELSE (
   goto :DefaultLauncher
 )
+
 :CustomLauncher
   call %CLRCustomTestLauncher% %~dp0 $(_CLRTestExeFile) %CLRTestExecutionArguments% %Host_Args%
   set CLRTestExitCode=%ERRORLEVEL%
-  goto EndLauncher
+  goto :EndLauncher
 
 :DefaultLauncher
   ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
